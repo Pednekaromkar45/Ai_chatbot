@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+const conversationRoutes = require("./routes/conversation");
+const messageRoutes = require("./routes/message");
 
 dotenv.config();
 
@@ -14,6 +16,9 @@ app.get("/health", (req: any, res: any) => {
 });
 
 const PORT = process.env.PORT || 4000;
+app.use("/api/conversation", conversationRoutes);
+app.use("/api/messages", messageRoutes);
+
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
