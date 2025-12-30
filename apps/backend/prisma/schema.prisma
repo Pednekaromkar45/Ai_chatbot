@@ -1,0 +1,164 @@
+// ==============================
+// Prisma Schema (Design-Only)
+// ==============================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==============================
+// USER (Recruiter / Admin)
+// ==============================
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  role      Role
+  createdAt DateTime @default(now())
+}
+
+// ==============================
+// JOB
+// ==============================
+model Job {
+  id                String           @id @default(uuid())
+  title             String
+  location          String
+  experienceRange   String
+  salaryRange       String
+  workMode          String
+  description       String
+  parsed_jd         Json?
+  screeningConfig   ScreeningConfig?
+  conversations     Conversation[]
+  createdAt         DateTime         @default(now())
+}
+
+// ==============================
+// CANDIDATE
+// ==============================
+model Candidate {
+  id            String         @id @default(uuid())
+  name          String
+  phone         String
+  email         String?
+  resumeUrl     String?
+  consentGiven  Boolean        @default(false)
+  conversations Conversation[]
+  createdAt     DateTime       @default(now())
+}
+
+// ==============================
+// CONVERSATION
+// ==============================
+model Conversation {
+  id              String          @id @default(uuid())
+  candidate        Candidate       @relation(fields: [candidateId], references: [id])
+  candidateId     String
+  job             Job             @relation(fields: [jobId], references: [id])
+  jobId           String
+  status          ConversationStatus
+  messages        Message[]
+  voiceResponses  VoiceResponse[]
+  screeningResult ScreeningResult?
+  startedAt       DateTime        @default(now())
+  completedAt     DateTime?
+}
+
+// ==============================
+// MESSAGE (CHAT LOG)
+// ==============================
+model Message {
+  id             String        @id @default(uuid())
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  conversationId String
+  sender         SenderType
+  type           MessageType
+  content        String
+  createdAt      DateTime      @default(now())
+}
+
+// ==============================
+// VOICE RESPONSE
+// ==============================
+model VoiceResponse {
+  id              String        @id @default(uuid())
+  conversation    Conversation @relation(fields: [conversationId], references: [id])
+  conversationId  String
+  question        String
+  audioUrl        String
+  transcript      String?
+  durationSeconds Int?
+  createdAt       DateTime      @default(now())
+}
+
+// ==============================
+// SCREENING RESULT
+// ==============================
+model ScreeningResult {
+  id                String        @id @default(uuid())
+  conversation      Conversation @relation(fields: [conversationId], references: [id])
+  conversationId    String        @unique
+
+  skillScore         Int
+  communicationScore Int
+  confidenceScore    Int
+  willingnessScore   Int
+  overallScore       Int
+
+  aiSummary          String
+  decision           ScreeningDecision
+  createdAt          DateTime      @default(now())
+}
+
+// ==============================
+// SCREENING CONFIG
+// ==============================
+model ScreeningConfig {
+  id                  String   @id @default(uuid())
+  job                 Job      @relation(fields: [jobId], references: [id])
+  jobId               String   @unique
+
+  skillWeight         Int
+  communicationWeight Int
+  confidenceWeight    Int
+  willingnessWeight   Int
+
+  passingScore        Int
+}
+
+// ==============================
+// ENUMS
+// ==============================
+enum Role {
+  admin
+  recruiter
+}
+
+enum SenderType {
+  candidate
+  ai
+  system
+}
+
+enum MessageType {
+  text
+  voice
+}
+
+enum ConversationStatus {
+  in_progress
+  completed
+  handed_to_human
+}
+
+enum ScreeningDecision {
+  shortlist
+  reject
+  review
+}
