@@ -5,7 +5,8 @@ const { evaluateCandidate } = require("../ai/evaluateCandidate");
 const router = express.Router();
 
 /**
- * Final AI screening evaluation
+ * POST /api/evaluate/:conversationId
+ * Run AI evaluation ONCE (idempotent)
  */
 router.post("/:conversationId", async (req: any, res: any) => {
   try {
@@ -26,7 +27,7 @@ router.post("/:conversationId", async (req: any, res: any) => {
       return res.status(404).json({ error: "Conversation not found" });
     }
 
-    // 2️⃣ Prevent duplicate evaluation
+    // 2️⃣ Prevent duplicate evaluation (idempotency)
     const existing = await prisma.screeningResult.findUnique({
       where: { conversationId }
     });
@@ -38,13 +39,13 @@ router.post("/:conversationId", async (req: any, res: any) => {
       });
     }
 
-    // 3️⃣ Run AI evaluation (TEXT ONLY for now)
+    // 3️⃣ Run AI evaluation
     const evaluation = await evaluateCandidate({
       messages: conversation.messages,
       job: conversation.job
     });
 
-    // 4️⃣ Save result
+    // 4️⃣ Save evaluation
     const saved = await prisma.screeningResult.create({
       data: {
         conversationId,
@@ -66,6 +67,34 @@ router.post("/:conversationId", async (req: any, res: any) => {
   } catch (err) {
     console.error("Evaluation error:", err);
     res.status(500).json({ error: "Evaluation failed" });
+  }
+});
+
+/**
+ * GET /api/evaluate/:conversationId
+ * Fetch existing evaluation (READ-ONLY)
+ */
+router.get("/:conversationId", async (req: any, res: any) => {
+  try {
+    const { conversationId } = req.params;
+
+    const evaluation = await prisma.screeningResult.findUnique({
+      where: { conversationId }
+    });
+
+    if (!evaluation) {
+      return res.status(404).json({
+        error: "Evaluation not found"
+      });
+    }
+
+    res.json(evaluation);
+
+  } catch (err) {
+    console.error("Fetch evaluation error:", err);
+    res.status(500).json({
+      error: "Failed to fetch evaluation"
+    });
   }
 });
 
