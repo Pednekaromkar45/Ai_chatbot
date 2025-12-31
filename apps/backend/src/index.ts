@@ -4,7 +4,7 @@ const dotenv = require("dotenv");
 const conversationRoutes = require("./routes/conversation");
 const messageRoutes = require("./routes/message");
 const evaluationRoutes = require("./routes/evaluation");
-const jobRoutes = require("./routes/job");
+const jobRoutes = require("./routes/jobs");
 //const voiceRoutes = require("./routes/voice");
 
 
